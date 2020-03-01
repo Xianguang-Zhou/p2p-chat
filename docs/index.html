@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>p2p chat</title>
+	<style>
+		div.line {
+			margin-bottom: 5px;
+		}
+
+		#messagesContainer {
+			height: 200px;
+			width: 500px;
+			border-style: inset;
+			overflow: scroll;
+		}
+	</style>
+</head>
+
+<body>
+	<form id="app" onsubmit="return false">
+		<div class="line">
+			<label>Peer ID: </label><input v-model="selfPeerId" readonly>
+			<button id="copySelfPeerId" v-if="selfPeerId">copy</button>
+		</div>
+		<div class="line">
+			<label>Friend peer ID: </label>
+			<input v-model="friendPeerId">
+			<input type="button" value="connect" v-on:click="connectPeer" v-if="selfPeerId">
+		</div>
+		<div class="line">
+			<label>Status: {{ status }}</label>
+		</div>
+		<div id="messagesContainer" class="line">
+			<div v-for="(msg, index) in messageList" :key="index">
+				{{ msg.name }}: {{ msg.content }}
+			</div>
+		</div>
+		<div class="line">
+			<textarea cols="45" rows="4" v-model="message" v-on:keyup.ctrl.enter.exact.stop="sendMessage"></textarea>
+		</div>
+		<input type="button" value="send" v-on:click="sendMessage">
+	</form>
+	<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+	<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
+	<script>
+		$(document).ready(function () {
+			const app = new Vue({
+				el: '#app',
+				data: {
+					friendPeerId: '',
+					selfPeerId: '',
+					status: 'getting peer ID...',
+					message: '',
+					messageList: []
+				},
+				methods: {
+					connectPeer: function () {
+						this.status = 'connecting...';
+						const conn = peer.connect(this.friendPeerId);
+						this.conn = conn;
+						conn.on('open', () => {
+							this.friendPeerId = conn.peer;
+							this.status = 'connected';
+						});
+						conn.on('close', () => {
+							this.status = 'disconnected';
+						});
+						conn.on('data', (data) => {
+							this.messageList.push({ name: 'friend', content: data });
+						});
+					},
+					sendMessage: function () {
+						this.messageList.push({ name: 'me', content: this.message });
+						this.conn.send(this.message);
+						this.message = '';
+					}
+				},
+			});
+			const clipboard = new ClipboardJS('#copySelfPeerId', {
+				text: function (trigger) {
+					return app.selfPeerId;
+				}
+			});
+			const peer = new Peer();
+			peer.on('open', (id) => {
+				app.selfPeerId = id;
+				app.status = 'online';
+			});
+			peer.on('connection', (conn) => {
+				app.conn = conn;
+				conn.on('open', () => {
+					app.friendPeerId = conn.peer;
+					app.status = 'connected';
+				});
+				conn.on('close', () => {
+					app.status = 'disconnected';
+				});
+				conn.on('data', (data) => {
+					app.messageList.push({ name: 'friend', content: data });
+				});
+			});
+		});
+	</script>
+</body>
+
+</html>
