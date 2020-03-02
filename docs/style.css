@@ -1,0 +1,23 @@
+div.line {
+    margin-bottom: 5px;
+}
+
+#messagesContainer {
+    height: 200px;
+    width: 500px;
+    border-style: inset;
+    overflow: scroll;
+    padding: 3px;
+}
+
+input[type=file] {
+    display: none;
+}
+
+.messageName {
+    color: blue;
+}
+
+.message {
+    margin-top: 0;
+}

@@ -3,19 +3,8 @@
 
 <head>
 	<meta charset="utf-8">
-	<title>p2p chat</title>
-	<style>
-		div.line {
-			margin-bottom: 5px;
-		}
-
-		#messagesContainer {
-			height: 200px;
-			width: 500px;
-			border-style: inset;
-			overflow: scroll;
-		}
-	</style>
+	<title>P2P chat</title>
+	<link href="style.css" rel="stylesheet">
 </head>
 
 <body>
@@ -33,14 +22,24 @@
 			<label>Status: {{ status }}</label>
 		</div>
 		<div id="messagesContainer" class="line">
-			<div v-for="(msg, index) in messageList" :key="index">
-				{{ msg.name }}: {{ msg.content }}
-			</div>
+			<p v-for="(msg, index) in messageList" :key="index" class="message">
+				<span class="messageName">{{ msg.name }}</span>:
+				<template v-if="msg.type === 'img'">
+					<br><img v-bind:src="msg.content" v-on:load="onImageLoad">
+				</template>
+				<template v-else>
+					{{ msg.content }}
+				</template>
+			</p>
+		</div>
+		<div class="line">
+			<input type="button" value="image" v-on:click="selectImages">
 		</div>
 		<div class="line">
 			<textarea cols="45" rows="4" v-model="message" v-on:keyup.ctrl.enter.exact.stop="sendMessage"></textarea>
 		</div>
 		<input type="button" value="send" v-on:click="sendMessage">
+		<input type="file" id="imageInput" multiple v-on:change="sendImages">
 	</form>
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/vue"></script>
@@ -70,13 +69,39 @@
 							this.status = 'disconnected';
 						});
 						conn.on('data', (data) => {
-							this.messageList.push({ name: 'friend', content: data });
+							if (data.type === 'img') {
+								const imageBlob = new Blob([data.content], { type: data.fileType });
+								const imageUrl = URL.createObjectURL(imageBlob);
+								this.messageList.push({ type: 'img', name: 'friend', content: imageUrl });
+							} else {
+								this.messageList.push({ type: 'text', name: 'friend', content: data.content });
+							}
 						});
 					},
 					sendMessage: function () {
-						this.messageList.push({ name: 'me', content: this.message });
-						this.conn.send(this.message);
+						this.messageList.push({ type: 'text', name: 'me', content: this.message });
+						this.conn.send({ type: 'text', content: this.message });
 						this.message = '';
+					},
+					sendImages: function (event) {
+						for (const imageFile of event.target.files) {
+							const imageUrl = URL.createObjectURL(imageFile);
+							this.messageList.push({ type: 'img', name: 'me', content: imageUrl });
+							const reader = new FileReader();
+							reader.onload = function (readerEvent) {
+								app.conn.send({ type: 'img', fileType: imageFile.type, content: readerEvent.target.result });
+							};
+							reader.readAsArrayBuffer(imageFile);
+						}
+					},
+					onImageLoad: function (event) {
+						const src = event.target.src;
+						if (src.startsWith('blob:')) {
+							window.URL.revokeObjectURL(src);
+						}
+					},
+					selectImages: function () {
+						$('#imageInput').click();
 					}
 				},
 			});
@@ -100,7 +125,13 @@
 					app.status = 'disconnected';
 				});
 				conn.on('data', (data) => {
-					app.messageList.push({ name: 'friend', content: data });
+					if (data.type === 'img') {
+						const imageBlob = new Blob([data.content], { type: data.fileType });
+						const imageUrl = URL.createObjectURL(imageBlob);
+						app.messageList.push({ type: 'img', name: 'friend', content: imageUrl });
+					} else {
+						app.messageList.push({ type: 'text', name: 'friend', content: data.content });
+					}
 				});
 			});
 		});
