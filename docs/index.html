@@ -4,44 +4,65 @@
 <head>
 	<meta charset="utf-8">
 	<title>P2P chat</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+		integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css"
+		integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
 	<link href="style.css" rel="stylesheet">
 </head>
 
 <body>
-	<form id="app" onsubmit="return false">
-		<div class="line">
-			<label>Peer ID: </label><input v-model="selfPeerId" readonly>
-			<button id="copySelfPeerId" v-if="selfPeerId">copy</button>
+	<div id="app" class="container-fluid">
+		<div class="row line">
+			<form class="form-inline" onsubmit="return false">
+				<div class="form-group">
+					<label for="peerIdInput">Peer ID: </label>
+					<input id="peerIdInput" type="text" class="form-control" v-model="selfPeerId" readonly>
+				</div>
+				<button id="copySelfPeerId" v-if="selfPeerId" class="btn btn-default">copy</button>
+			</form>
 		</div>
-		<div class="line">
-			<label>Friend peer ID: </label>
-			<input v-model="friendPeerId">
-			<input type="button" value="connect" v-on:click="connectPeer" v-if="selfPeerId">
+		<div class="row line">
+			<form class="form-inline" onsubmit="return false">
+				<div class="form-group">
+					<label for="friendPeerIdInput">Friend peer ID: </label>
+					<input id="friendPeerIdInput" v-model="friendPeerId" class="form-control">
+				</div>
+				<input type="button" value="connect" v-on:click="connectPeer" v-if="selfPeerId" class="btn btn-default">
+			</form>
 		</div>
-		<div class="line">
-			<label>Status: {{ status }}</label>
+		<div class="row line">
+			<label style="margin:0">Status:&nbsp;</label><span>{{ status }}</span>
 		</div>
-		<div id="messagesContainer" class="line">
-			<p v-for="(msg, index) in messageList" :key="index" class="message">
-				<span class="messageName">{{ msg.name }}</span>:
-				<template v-if="msg.type === 'img'">
-					<br><img v-bind:src="msg.content" v-on:load="onImageLoad">
-				</template>
-				<template v-else>
-					{{ msg.content }}
-				</template>
-			</p>
+		<div class="row line">
+			<div id="messagesContainer" class="col-xs-12">
+				<p v-for="(msg, index) in messageList" :key="index" class="message">
+					<span class="messageName">{{ msg.name }}</span>:&nbsp;
+					<template v-if="msg.type === 'img'">
+						<br><img v-bind:src="msg.content" v-on:load="onImageLoad" class="messageImage">
+					</template>
+					<template v-else>
+						<span class="messageText">{{ msg.content }}</span>
+					</template>
+				</p>
+			</div>
 		</div>
-		<div class="line">
-			<input type="button" value="image" v-on:click="selectImages">
+		<div class="row line">
+			<input type="button" value="image" v-on:click="selectImages" class="btn btn-default">
 		</div>
-		<div class="line">
-			<textarea cols="45" rows="4" v-model="message" v-on:keyup.ctrl.enter.exact.stop="sendMessage"></textarea>
+		<div class="row line">
+			<textarea cols="45" rows="4" v-model="message" v-on:keyup.ctrl.enter.exact.stop="sendMessage"
+				class="form-control col-xs-12"></textarea>
 		</div>
-		<input type="button" value="send" v-on:click="sendMessage">
+		<div class="row line">
+			<input type="button" value="send" v-on:click="sendMessage" class="btn btn-default">
+		</div>
 		<input type="file" id="imageInput" multiple v-on:change="sendImages">
-	</form>
+	</div>
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"
+		integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
+		crossorigin="anonymous"></script>
 	<script src="https://cdn.jsdelivr.net/npm/vue"></script>
 	<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
