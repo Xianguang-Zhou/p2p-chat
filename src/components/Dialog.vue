@@ -69,7 +69,7 @@
 
 <script lang="ts">
 import $ from "jquery";
-import { Vue, Component } from "vue-property-decorator";
+import { Vue, Component, Watch } from "vue-property-decorator";
 import Peer from "peerjs";
 import ClipboardJS from "clipboard";
 
@@ -187,6 +187,15 @@ export default class Dialog extends Vue {
 
   selectImages() {
     $("#imageInput").click();
+  }
+
+  scrollBottom() {
+    $("#messagesContainer").scrollTop($("#messagesContainer")[0].scrollHeight);
+  }
+
+  @Watch("messageList")
+  onMessageListChanged(val: Message[], oldVal: Message[]) {
+    setTimeout(this.scrollBottom, 0);
   }
 }
 </script>
