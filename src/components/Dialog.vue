@@ -12,7 +12,7 @@
             readonly
           />
         </div>&nbsp;
-        <button id="copySelfPeerId" v-if="selfPeerId" class="btn btn-default">copy</button>
+        <button id="copySelfPeerId" v-if="selfPeerId" class="btn btn-default">Copy</button>
       </form>
     </div>
     <div class="row line">
@@ -23,7 +23,7 @@
         </div>&nbsp;
         <input
           type="button"
-          value="connect"
+          value="Connect"
           v-on:click="connectPeer"
           v-if="selfPeerId"
           class="btn btn-default"
@@ -33,6 +33,14 @@
     <div class="row line">
       <label style="margin:0">Status:&nbsp;</label>
       <span>{{ status }}</span>
+      <button
+        type="button"
+        class="btn btn-default pull-right"
+        data-toggle="button"
+        aria-pressed="false"
+        autocomplete="off"
+        v-on:click="toggleScrollingLock"
+      >Scroll Lock</button>
     </div>
     <div class="row line">
       <div id="messagesContainer" class="col-xs-12">
@@ -49,7 +57,7 @@
       </div>
     </div>
     <div class="row line">
-      <input type="button" value="image" v-on:click="selectImages" class="btn btn-default" />
+      <input type="button" value="Image" v-on:click="selectImages" class="btn btn-default" />
     </div>
     <div class="row line">
       <textarea
@@ -61,7 +69,7 @@
       ></textarea>
     </div>
     <div class="row line">
-      <input type="button" value="send" v-on:click="sendMessage" class="btn btn-default" />
+      <input type="button" value="Send" v-on:click="sendMessage" class="btn btn-default" />
     </div>
     <input type="file" id="imageInput" multiple v-on:change="sendImages" />
   </div>
@@ -95,20 +103,28 @@ export default class Dialog extends Vue {
   message = "";
   readonly messageList: Message[] = [];
 
-  private readonly clipboard = new ClipboardJS("#copySelfPeerId", {
-    text: trigger => {
-      return this.selfPeerId;
-    }
-  });
+  private readonly clipboard: ClipboardJS | null = null;
 
   private readonly peer!: Peer;
   private conn!: Peer.DataConnection;
 
+  private isScrollingLocked = false;
+
   constructor() {
     super();
+    const self = this;
+    this.clipboard = new ClipboardJS("#copySelfPeerId", {
+      text: trigger => {
+        return self.getSelfPeerId();
+      }
+    });
     this.peer = new Peer();
     this.peer.on("open", this.onPeerOpen);
     this.peer.on("connection", this.onPeerConnection);
+  }
+
+  getSelfPeerId() {
+    return this.selfPeerId;
   }
 
   onPeerOpen(id: string) {
@@ -179,6 +195,7 @@ export default class Dialog extends Vue {
   }
 
   onImageLoad(event: Event) {
+    this.scrollBottom();
     const src = (event.target as HTMLImageElement).src;
     if (src.startsWith("blob:")) {
       window.URL.revokeObjectURL(src);
@@ -190,12 +207,23 @@ export default class Dialog extends Vue {
   }
 
   scrollBottom() {
-    $("#messagesContainer").scrollTop($("#messagesContainer")[0].scrollHeight);
+    if (!this.isScrollingLocked) {
+      $("#messagesContainer").scrollTop(
+        $("#messagesContainer")[0].scrollHeight
+      );
+    }
+  }
+
+  toggleScrollingLock() {
+    this.isScrollingLocked = !this.isScrollingLocked;
   }
 
   @Watch("messageList")
   onMessageListChanged(val: Message[], oldVal: Message[]) {
-    setTimeout(this.scrollBottom, 0);
+    const lastMessageType = val[val.length - 1].type;
+    if (lastMessageType === "text") {
+      setTimeout(this.scrollBottom, 0);
+    }
   }
 }
 </script>
