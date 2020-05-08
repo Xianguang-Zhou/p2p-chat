@@ -33,6 +33,16 @@
     <div class="row line">
       <label style="margin:0">Status:&nbsp;</label>
       <span>{{ status }}</span>
+    </div>
+    <div class="row line">
+      <label style="margin:0">Call status:&nbsp;</label>
+      <span>{{ callStatus }}&nbsp;</span>
+      <input
+        type="button"
+        value="Toggle call"
+        v-on:click="toggleCall"
+        class="btn btn-default"
+      />
       <button
         type="button"
         class="btn btn-default pull-right"
@@ -72,6 +82,11 @@
       <input type="button" value="Send" v-on:click="sendMessage" class="btn btn-default" />
     </div>
     <input type="file" id="imageInput" multiple v-on:change="sendImages" />
+    <audio
+      v-bind:src="audioSource"
+      autoplay
+      style="display:none"
+    >Your browser can not support "audio" tags.</audio>
   </div>
 </template>
 
@@ -110,6 +125,12 @@ export default class Dialog extends Vue {
 
   private isScrollingLocked = false;
 
+  private getUserMedia: any | null;
+  private mediaConnection: Peer.MediaConnection | null = null;
+  private _audioContext: AudioContext | null = null;
+  audioSource: MediaStreamAudioSourceNode | null = null;
+  callStatus = "disconnected";
+
   constructor() {
     super();
     const self = this;
@@ -118,9 +139,13 @@ export default class Dialog extends Vue {
         return self.getSelfPeerId();
       }
     });
+    const nav = navigator as { [key: string]: any };
+    this.getUserMedia =
+      nav.getUserMedia || nav.webkitGetUserMedia || nav.mozGetUserMedia;
     this.peer = new Peer();
     this.peer.on("open", this.onPeerOpen);
     this.peer.on("connection", this.onPeerConnection);
+    this.peer.on("call", this.onPeerCall);
   }
 
   getSelfPeerId() {
@@ -204,6 +229,84 @@ export default class Dialog extends Vue {
 
   selectImages() {
     $("#imageInput").click();
+  }
+
+  private get audioContext(): AudioContext {
+    if (this._audioContext == null) {
+      this._audioContext = new AudioContext();
+    }
+    return this._audioContext;
+  }
+
+  toggleCall() {
+    if (this.audioSource != null) {
+      this.mediaConnection?.close();
+      this.audioSource = null;
+      this.callStatus = "disconnected";
+    } else {
+      this.getUserMedia(
+        { video: false, audio: true },
+        (stream: MediaStream) => {
+          this.callStatus = "connecting...";
+          this.mediaConnection = this.peer.call(this.friendPeerId, stream);
+          this.mediaConnection.on("error", console.error);
+          this.mediaConnection.on("close", () => {
+            this.audioSource = null;
+            this.callStatus = "disconnected";
+          });
+          this.mediaConnection.on("stream", remoteStream => {
+            this.audioSource = this.audioContext.createMediaStreamSource(
+              remoteStream
+            );
+            this.callStatus = "connected";
+          });
+        },
+        (err: DOMException) => {
+          console.log("Failed to get local stream.", err);
+          window.alert("Failed to get local stream.");
+        }
+      );
+    }
+  }
+
+  onPeerCall(mediaConnection: Peer.MediaConnection) {
+    if (mediaConnection.peer != this.friendPeerId) {
+      mediaConnection.close();
+      return;
+    }
+    if (!window.confirm("Answer the call?")) {
+      mediaConnection.close();
+      return;
+    }
+    this.mediaConnection?.close();
+    if (this.audioSource != null) {
+      this.audioSource = null;
+    }
+    this.callStatus = "disconnected";
+    this.getUserMedia(
+      { video: false, audio: true },
+      (stream: MediaStream) => {
+        this.mediaConnection = mediaConnection;
+        this.callStatus = "answering...";
+        this.mediaConnection.answer(stream);
+        this.mediaConnection.on("error", console.error);
+        this.mediaConnection.on("close", () => {
+          this.audioSource = null;
+          this.callStatus = "disconnected";
+        });
+        this.mediaConnection.on("stream", remoteStream => {
+          this.audioSource = this.audioContext.createMediaStreamSource(
+            remoteStream
+          );
+          this.callStatus = "connected";
+        });
+      },
+      (err: DOMException) => {
+        mediaConnection.close();
+        console.log("Failed to get local stream.", err);
+        window.alert("Failed to get local stream.");
+      }
+    );
   }
 
   scrollBottom() {
