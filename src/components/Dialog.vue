@@ -111,8 +111,8 @@ export default class Dialog extends Vue {
 
   private readonly clipboard: ClipboardJS | null = null;
 
-  private readonly peer!: Peer;
-  private conn!: Peer.DataConnection;
+  private readonly peer: Peer;
+  private conn: Peer.DataConnection | null = null;
 
   private isScrollingLocked = false;
 
@@ -148,6 +148,10 @@ export default class Dialog extends Vue {
   }
 
   onPeerConnection(conn: Peer.DataConnection) {
+    if (this.conn != null) {
+      conn.close();
+      return;
+    }
     this.conn = conn;
     conn.on("open", this.onConnOpen);
     conn.on("close", this.onConnClose);
@@ -155,6 +159,9 @@ export default class Dialog extends Vue {
   }
 
   onConnOpen() {
+    if (this.conn == null) {
+      return;
+    }
     this.friendPeerId = this.conn.peer;
     this.status = "connected";
   }
@@ -178,11 +185,17 @@ export default class Dialog extends Vue {
   }
 
   connectPeer() {
+    if (this.conn != null) {
+      return;
+    }
     this.status = "connecting...";
     this.onPeerConnection(this.peer.connect(this.friendPeerId));
   }
 
   sendMessage() {
+    if (this.conn == null) {
+      return;
+    }
     this.messageList.push(new Message("text", "me", this.message));
     this.conn.send({ type: "text", content: this.message });
     this.message = "";
@@ -192,6 +205,9 @@ export default class Dialog extends Vue {
     const inputElement = event.target as HTMLInputElement;
     if (inputElement.files == null) return;
     const conn = this.conn;
+    if (conn == null) {
+      return;
+    }
     for (let index = 0; index < inputElement.files.length; ++index) {
       const imageFile = inputElement.files[index];
       const imageUrl = URL.createObjectURL(imageFile);
@@ -237,6 +253,9 @@ export default class Dialog extends Vue {
       this.setAudioSource(null);
       this.callStatus = "disconnected";
     } else {
+      if (this.conn == null) {
+        return;
+      }
       this.getUserMedia(
         { video: false, audio: true },
         (stream: MediaStream) => {
