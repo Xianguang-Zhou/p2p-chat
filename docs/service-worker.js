@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "precache-manifest.9a9ee50b0f595c278826fb70d77ac703.js"
+  "precache-manifest.c1253eaf4a80ea2823a9cb1ef6879946.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "p2p-chat"});

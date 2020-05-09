@@ -37,12 +37,7 @@
     <div class="row line">
       <label style="margin:0">Call status:&nbsp;</label>
       <span>{{ callStatus }}&nbsp;</span>
-      <input
-        type="button"
-        value="Toggle call"
-        v-on:click="toggleCall"
-        class="btn btn-default"
-      />
+      <input type="button" value="Toggle call" v-on:click="toggleCall" class="btn btn-default" />
       <button
         type="button"
         class="btn btn-default pull-right"
@@ -82,11 +77,7 @@
       <input type="button" value="Send" v-on:click="sendMessage" class="btn btn-default" />
     </div>
     <input type="file" id="imageInput" multiple v-on:change="sendImages" />
-    <audio
-      v-bind:src="audioSource"
-      autoplay
-      style="display:none"
-    >Your browser can not support "audio" tags.</audio>
+    <audio id="speaker" autoplay>Your browser can not support "audio" elements.</audio>
   </div>
 </template>
 
@@ -127,8 +118,7 @@ export default class Dialog extends Vue {
 
   private getUserMedia: any | null;
   private mediaConnection: Peer.MediaConnection | null = null;
-  private _audioContext: AudioContext | null = null;
-  audioSource: MediaStreamAudioSourceNode | null = null;
+  private _audioSource: MediaStream | null = null;
   callStatus = "disconnected";
 
   constructor() {
@@ -231,17 +221,20 @@ export default class Dialog extends Vue {
     $("#imageInput").click();
   }
 
-  private get audioContext(): AudioContext {
-    if (this._audioContext == null) {
-      this._audioContext = new AudioContext();
-    }
-    return this._audioContext;
+  private getAudioSource(): MediaStream | null {
+    return this._audioSource;
+  }
+
+  private setAudioSource(source: MediaStream | null) {
+    this._audioSource = source;
+    const speaker = document.querySelector("#speaker") as HTMLAudioElement;
+    speaker.srcObject = source;
   }
 
   toggleCall() {
-    if (this.audioSource != null) {
+    if (this.getAudioSource() != null) {
       this.mediaConnection?.close();
-      this.audioSource = null;
+      this.setAudioSource(null);
       this.callStatus = "disconnected";
     } else {
       this.getUserMedia(
@@ -251,13 +244,11 @@ export default class Dialog extends Vue {
           this.mediaConnection = this.peer.call(this.friendPeerId, stream);
           this.mediaConnection.on("error", console.error);
           this.mediaConnection.on("close", () => {
-            this.audioSource = null;
+            this.setAudioSource(null);
             this.callStatus = "disconnected";
           });
           this.mediaConnection.on("stream", remoteStream => {
-            this.audioSource = this.audioContext.createMediaStreamSource(
-              remoteStream
-            );
+            this.setAudioSource(remoteStream);
             this.callStatus = "connected";
           });
         },
@@ -279,8 +270,8 @@ export default class Dialog extends Vue {
       return;
     }
     this.mediaConnection?.close();
-    if (this.audioSource != null) {
-      this.audioSource = null;
+    if (this.getAudioSource() != null) {
+      this.setAudioSource(null);
     }
     this.callStatus = "disconnected";
     this.getUserMedia(
@@ -291,13 +282,11 @@ export default class Dialog extends Vue {
         this.mediaConnection.answer(stream);
         this.mediaConnection.on("error", console.error);
         this.mediaConnection.on("close", () => {
-          this.audioSource = null;
+          this.setAudioSource(null);
           this.callStatus = "disconnected";
         });
         this.mediaConnection.on("stream", remoteStream => {
-          this.audioSource = this.audioContext.createMediaStreamSource(
-            remoteStream
-          );
+          this.setAudioSource(remoteStream);
           this.callStatus = "connected";
         });
       },
