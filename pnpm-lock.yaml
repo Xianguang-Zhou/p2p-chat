@@ -1,11 +1,13 @@
 dependencies:
   '@types/clipboard': r.cnpmjs.org/@types/clipboard/2.0.1
   '@types/jquery': r.cnpmjs.org/@types/jquery/3.3.33
+  '@types/underscore': r.cnpmjs.org/@types/underscore/1.10.0
   bootstrap: r.cnpmjs.org/bootstrap/3.4.1
   clipboard: r.cnpmjs.org/clipboard/2.0.5
   jquery: r.cnpmjs.org/jquery/3.4.1
   peerjs: r.cnpmjs.org/peerjs/1.2.0
   register-service-worker: 1.6.2
+  underscore: r.cnpmjs.org/underscore/1.10.2
   vue: 2.6.11
   vue-class-component: 7.2.3_vue@2.6.11
   vue-property-decorator: 8.4.0_vue@2.6.11
@@ -8298,6 +8300,14 @@ packages:
       registry: 'http://registry.cnpmjs.org/'
       tarball: 'http://r.cnpmjs.org/@types/sizzle/download/@types/sizzle-2.3.2.tgz'
     version: 2.3.2
+  r.cnpmjs.org/@types/underscore/1.10.0:
+    dev: false
+    name: '@types/underscore'
+    resolution:
+      integrity: sha1-XLDf8qX2FvyODGG0gr8B+iCgPOw=
+      registry: 'http://registry.cnpmjs.org/'
+      tarball: 'http://r.cnpmjs.org/@types/underscore/download/@types/underscore-1.10.0.tgz'
+    version: 1.10.0
   r.cnpmjs.org/@types/webrtc/0.0.25:
     dev: false
     name: '@types/webrtc'
@@ -8930,6 +8940,14 @@ packages:
       registry: 'http://registry.cnpmjs.org/'
       tarball: 'http://r.cnpmjs.org/tmp/download/tmp-0.0.33.tgz'
     version: 0.0.33
+  r.cnpmjs.org/underscore/1.10.2:
+    dev: false
+    name: underscore
+    resolution:
+      integrity: sha1-c9aqNmjzGI5K2w8ZQ70Sz9fvqq8=
+      registry: 'http://registry.cnpmjs.org/'
+      tarball: 'http://r.cnpmjs.org/underscore/download/underscore-1.10.2.tgz'
+    version: 1.10.2
   r.cnpmjs.org/webrtc-adapter/7.5.0:
     dependencies:
       rtcpeerconnection-shim: r.cnpmjs.org/rtcpeerconnection-shim/1.2.15
@@ -8947,6 +8965,7 @@ packages:
 specifiers:
   '@types/clipboard': ^2.0.1
   '@types/jquery': ^3.3.33
+  '@types/underscore': ^1.10.0
   '@vue/cli-plugin-pwa': ~4.2.0
   '@vue/cli-plugin-typescript': ~4.2.0
   '@vue/cli-service': ~4.2.0
@@ -8956,6 +8975,7 @@ specifiers:
   peerjs: ^1.2.0
   register-service-worker: ^1.6.2
   typescript: ~3.7.5
+  underscore: ^1.10.2
   vue: ^2.6.11
   vue-class-component: ^7.2.2
   vue-property-decorator: ^8.3.0

@@ -37,7 +37,7 @@
     <div class="row line">
       <label style="margin:0">Call status:&nbsp;</label>
       <span>{{ callStatus }}&nbsp;</span>
-      <input type="button" value="Toggle call" v-on:click="toggleCall" class="btn btn-default" />
+      <input type="button" value="Toggle Call" v-on:click="toggleCall" class="btn btn-default" />
       <button
         type="button"
         class="btn btn-default pull-right"
@@ -56,7 +56,7 @@
             <img v-bind:src="msg.content" v-on:load="onImageLoad" class="messageImage" />
           </template>
           <template v-else>
-            <span class="messageText">{{ msg.content }}</span>
+            <span class="messageText" v-html="msg.content"></span>
           </template>
         </p>
       </div>
@@ -82,6 +82,7 @@
 </template>
 
 <script lang="ts">
+import * as underscore from "underscore";
 import $ from "jquery";
 import { Vue, Component, Watch } from "vue-property-decorator";
 import Peer from "peerjs";
@@ -170,6 +171,14 @@ export default class Dialog extends Vue {
     this.status = "disconnected";
   }
 
+  private escapeText(text: string): string {
+    return underscore
+      .escape(text)
+      .replace(/\n/g, "<br>")
+      .replace(/ /g, "&nbsp;")
+      .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
+  }
+
   onConnData(data: Packet) {
     if (data.type === "img") {
       const imageBlob = new Blob([data.content as ArrayBuffer], {
@@ -178,9 +187,8 @@ export default class Dialog extends Vue {
       const imageUrl = URL.createObjectURL(imageBlob);
       this.messageList.push(new Message("img", "friend", imageUrl));
     } else {
-      this.messageList.push(
-        new Message("text", "friend", data.content as string)
-      );
+      const text = this.escapeText(data.content as string);
+      this.messageList.push(new Message("text", "friend", text));
     }
   }
 
@@ -196,7 +204,9 @@ export default class Dialog extends Vue {
     if (this.conn == null) {
       return;
     }
-    this.messageList.push(new Message("text", "me", this.message));
+    this.messageList.push(
+      new Message("text", "me", this.escapeText(this.message))
+    );
     this.conn.send({ type: "text", content: this.message });
     this.message = "";
   }
