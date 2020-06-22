@@ -50,11 +50,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <div class="row line">
       <label style="margin:0">Status:&nbsp;</label>
       <span>{{ status }}</span>
-    </div>
-    <div class="row line">
-      <label style="margin:0">Call status:&nbsp;</label>
-      <span>{{ callStatus }}&nbsp;</span>
-      <input type="button" value="Toggle Call" v-on:click="toggleCall" class="btn btn-default" />
       <button
         type="button"
         class="btn btn-default pull-right"
@@ -92,6 +87,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </div>
     <div class="row line">
       <input type="button" value="Send" v-on:click="sendMessage" class="btn btn-default" />
+    </div>
+    <div class="row line">
+      <label style="margin:0">Call status:&nbsp;</label>
+      <span>{{ callStatus }}&nbsp;</span>
+      <input type="button" value="Toggle Call" v-on:click="toggleCall" class="btn btn-default" />
+      &nbsp;
+      <label class="checkbox-inline">
+        <input type="checkbox" v-model="isVideoEnabled" />Use Video
+      </label>
+      <label class="checkbox-inline">
+        <input type="checkbox" v-model="isCameraEnabled" />Use Camera
+      </label>
+    </div>
+    <div class="row line">
+      <video
+        id="player"
+        autoplay
+        controls
+        class="col-xs-12"
+      >Your browser can not support "video" elements.</video>
     </div>
     <input type="file" id="imageInput" multiple v-on:change="sendImages" />
     <audio id="speaker" autoplay>Your browser can not support "audio" elements.</audio>
@@ -136,8 +151,10 @@ export default class Dialog extends Vue {
 
   private getUserMedia: any | null;
   private mediaConnection: Peer.MediaConnection | null = null;
-  private _audioSource: MediaStream | null = null;
+  private _mediaSource: MediaStream | null = null;
   callStatus = "disconnected";
+  isVideoEnabled = false;
+  isCameraEnabled = false;
 
   constructor() {
     super();
@@ -264,37 +281,42 @@ export default class Dialog extends Vue {
     $("#imageInput").click();
   }
 
-  private getAudioSource(): MediaStream | null {
-    return this._audioSource;
+  private getMediaSource(): MediaStream | null {
+    return this._mediaSource;
   }
 
-  private setAudioSource(source: MediaStream | null) {
-    this._audioSource = source;
-    const speaker = document.querySelector("#speaker") as HTMLAudioElement;
-    speaker.srcObject = source;
+  private setMediaSource(source: MediaStream | null) {
+    this._mediaSource = source;
+    const mediaElement = document.querySelector(
+      this.isVideoEnabled ? "#player" : "#speaker"
+    ) as HTMLMediaElement;
+    mediaElement.srcObject = source;
   }
 
   toggleCall() {
-    if (this.getAudioSource() != null) {
+    if (this.getMediaSource() != null) {
       this.mediaConnection?.close();
-      this.setAudioSource(null);
+      this.setMediaSource(null);
       this.callStatus = "disconnected";
     } else {
       if (this.conn == null) {
         return;
       }
       this.getUserMedia(
-        { video: false, audio: true },
+        {
+          video: this.isCameraEnabled ? { facingMode: "user" } : false,
+          audio: true
+        },
         (stream: MediaStream) => {
           this.callStatus = "connecting...";
           this.mediaConnection = this.peer.call(this.friendPeerId, stream);
           this.mediaConnection.on("error", console.error);
           this.mediaConnection.on("close", () => {
-            this.setAudioSource(null);
+            this.setMediaSource(null);
             this.callStatus = "disconnected";
           });
           this.mediaConnection.on("stream", remoteStream => {
-            this.setAudioSource(remoteStream);
+            this.setMediaSource(remoteStream);
             this.callStatus = "connected";
           });
         },
@@ -316,23 +338,26 @@ export default class Dialog extends Vue {
       return;
     }
     this.mediaConnection?.close();
-    if (this.getAudioSource() != null) {
-      this.setAudioSource(null);
+    if (this.getMediaSource() != null) {
+      this.setMediaSource(null);
     }
     this.callStatus = "disconnected";
     this.getUserMedia(
-      { video: false, audio: true },
+      {
+        video: this.isCameraEnabled ? { facingMode: "user" } : false,
+        audio: true
+      },
       (stream: MediaStream) => {
         this.mediaConnection = mediaConnection;
         this.callStatus = "answering...";
         this.mediaConnection.answer(stream);
         this.mediaConnection.on("error", console.error);
         this.mediaConnection.on("close", () => {
-          this.setAudioSource(null);
+          this.setMediaSource(null);
           this.callStatus = "disconnected";
         });
         this.mediaConnection.on("stream", remoteStream => {
-          this.setAudioSource(remoteStream);
+          this.setMediaSource(remoteStream);
           this.callStatus = "connected";
         });
       },
@@ -361,6 +386,15 @@ export default class Dialog extends Vue {
     const lastMessageType = val[val.length - 1].type;
     if (lastMessageType === "text") {
       setTimeout(this.scrollBottom, 0);
+    }
+  }
+
+  @Watch("isVideoEnabled")
+  onVideoToggled(val: Boolean, oldVal: Boolean) {
+    if (val) {
+      $("#player").show();
+    } else {
+      $("#player").hide();
     }
   }
 }
@@ -397,5 +431,9 @@ div.line {
 
 .messageImage {
   padding-right: 8px;
+}
+
+#player {
+  display: none;
 }
 </style>
